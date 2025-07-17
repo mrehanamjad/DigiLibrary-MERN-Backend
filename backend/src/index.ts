@@ -1,5 +1,5 @@
 import { app } from "./app";
-import connectDB from "./config/db";
+import connectDB from "./db/db";
 
 const PORT = process.env.PORT || 8000;
 

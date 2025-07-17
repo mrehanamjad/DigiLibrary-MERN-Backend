@@ -1,6 +1,6 @@
-import { DB_Name } from "./constant";
+import { DB_Name } from "../config/constant";
 import mongoose from "mongoose";
-import { config } from "./config";
+import { config } from "../config/config";
 
 const connectDB = async () => {
     try {
