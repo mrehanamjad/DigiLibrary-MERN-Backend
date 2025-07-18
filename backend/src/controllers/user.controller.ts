@@ -3,18 +3,19 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
 import { User } from "../models/user.model";
 import { ApiResponse } from "../utils/ApiResponse";
+import { UserI } from "../types/user.types";
+
+const generateAccessAndRefreshTokens = async (user: UserI) => {
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+};
 
 const registerUser = asyncHandler(async (req: Request, res: Response) => {
-    // get user data from frontend (req.body)
-    // validation - not emplty, valid email, password length, etc.
-    // check if user already exists: username , email
-    // check for images , check for avatar image
-    // upload them to cloudinary, avatar
-    // create user object - create entry in db
-    // remove password and refresh token from response
-    // chech for user craetion
-    // return response with user data
-
     const { fullName, email, username, password } = req.body;
 
     if (!fullName || !email || !username || !password) {
@@ -24,10 +25,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-        throw new ApiError(
-            409,
-            "User with this email or username already exists",
-        );
+        throw new ApiError(409, "User with this email  already exists");
     }
 
     const user = await User.create({
@@ -48,9 +46,56 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     return res
         .status(201)
         .json(
-            new ApiResponse(200,createdUser, "User registered successfully"),
+            new ApiResponse(200, createdUser, "User registered successfully"),
         );
 });
 
+const loginUser = asyncHandler(async (req: Request, res: Response) => {
+    const { email, password } = req.body;
 
-export {registerUser}
+    if (!email || !password) {
+        throw new ApiError(400, "All fields are required");
+    }
+
+    const user = await User.findOne<UserI>({ email });
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist");
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials");
+    }
+
+    const { accessToken, refreshToken } =
+        await generateAccessAndRefreshTokens(user);
+
+    const loggedInUser = await User.findById(user._id).select(
+        "-password -refreshToken",
+    );
+
+    if (!loggedInUser) {
+        throw new ApiError(500, "Failed to retrieve user details after login");
+    }
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+    };
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                { user: loggedInUser, accessToken, refreshToken },
+                "Logged in successfully",
+            ),
+        );
+});
+
+export { registerUser, loginUser };
