@@ -7,7 +7,9 @@ export interface UserI extends Document {
     email: string;
     fullName: string;
     password: string;
+    bio?:string;
     avatar?: string;
+    coverImage?: string;
     refreshToken?: string;
 
     isPasswordCorrect(password: string): Promise<boolean>;

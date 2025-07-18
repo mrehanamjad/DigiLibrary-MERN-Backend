@@ -5,56 +5,62 @@ import { config } from "../config/config";
 import { UserI } from "../types/user.types";
 import type { StringValue } from "ms";
 
-
 const userSchema = new mongoose.Schema<UserI>(
-    {
-        username: {
-            type: String,
-            required: [true, "Username is required"],
-            unique: true,
-            trim: true,
-            minlength: 3,
-            lowercase: true,
-            index: true,
-        },
-        fullName: {
-            type: String,
-            required: true,
-            index: true,
-        },
-        email: {
-            type: String,
-            required: [true, "Email is required"],
-            unique: true,
-            trim: true,
-            lowercase: true,
-            index: true,
-        },
-        password: {
-            type: String,
-            required: [true, "Password is required"],
-        },
-        avatar: {
-            type: String,
-            default: "",
-        },
-        refreshToken: {
-            type: String,
-        },
+  {
+    username: {
+      type: String,
+      required: [true, "Username is required"],
+      unique: true,
+      trim: true,
+      minlength: 3,
+      lowercase: true,
+      index: true,
     },
-    {
-        timestamps: true,
+    fullName: {
+      type: String,
+      required: true,
+      index: true,
     },
+    bio: {
+      type: String,
+    },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      trim: true,
+      lowercase: true,
+      index: true,
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+    },
+    avatar: {
+      type: String,
+      default: "",
+    },
+    coverImage: {
+      type: String,
+      default: "",
+    },
+    refreshToken: {
+      type: String,
+    },
+  },
+  {
+    timestamps: true,
+  }
 );
 
 userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
-    this.password = await bcrypt.hash(this.password, 10);
-    next();
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
 userSchema.methods.isPasswordCorrect = async function (password: string) {
-    return await bcrypt.compare(password, this.password);
+  return await bcrypt.compare(password, this.password);
 };
 
 userSchema.methods.generateAccessToken = function (): string {
@@ -83,6 +89,5 @@ userSchema.methods.generateRefreshToken = function (): string {
 
   return jwt.sign(payload, config.refreshTokenSecret, options);
 };
-
 
 export const User = mongoose.model<UserI>("User", userSchema);

@@ -7,6 +7,7 @@ import { UserI } from "../types/user.types";
 import { AuthRequest } from "../types/user.types";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { config } from "../config/config";
+import { uploadOnImageKit } from "../utils/imagekit";
 
 const generateAccessAndRefreshTokens = async (user: UserI) => {
   try {
@@ -180,7 +181,7 @@ const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
     );
 });
 
-const changePassword = async (req: Request, res: Response) => {
+const changePassword = asyncHandler(async (req: Request, res: Response) => {
   const _req = req as AuthRequest;
 
   const { oldPassword, newPassword } = req.body;
@@ -207,14 +208,130 @@ const changePassword = async (req: Request, res: Response) => {
   return res
     .status(200)
     .json(new ApiResponse(200, {}, "Password changed successfully"));
-};
+});
 
-const getCurrentUser = asyncHandler(async (req, res) => {
+const changeEmail = asyncHandler(async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
+
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    throw new ApiError(400, "Email and password are required");
+  }
+
+  const user = await User.findById(_req.user._id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isPasswordValid = await user.isPasswordCorrect(password);
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid password");
+  }
+
+  user.email = email;
+  await user.save({ validateBeforeSave: true });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Email changed successfully"));
+});
+
+const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
   const _req = req as AuthRequest;
 
   return res
     .status(200)
     .json(new ApiResponse(200, _req.user, "Current user fetched successfully"));
+});
+
+const updateUserProfile = asyncHandler(async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
+  const { username, fullName, bio } = req.body;
+
+  if (!username || !fullName || !bio) {
+    throw new ApiError(400, "fullName ,username & bio fields are required");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    _req.user?._id,
+    {
+      $set: { username, fullName, bio },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User profile updated successfully"));
+});
+
+const updateUserAvatar = asyncHandler(async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
+
+  const avatarLocalPath = req.file?.path;
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is missing");
+  }
+
+  const avatar = await uploadOnImageKit(
+    avatarLocalPath,
+    req.file?.filename as string
+  );
+
+  if (!avatar?.url) {
+    throw new ApiError(400, "Error while uploading on avatar");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    _req.user?._id,
+    {
+      $set: {
+        avatar: avatar?.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Avatar image updated successfully"));
+});
+
+const updateCoverImage = asyncHandler(async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
+
+  const coverImageLocalPath = req.file?.path;
+
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "Cover image file is missing");
+  }
+
+  const coverImage = await uploadOnImageKit(
+    coverImageLocalPath,
+    req.file?.filename as string
+  );
+
+  if (!coverImage?.url) {
+    throw new ApiError(400, "Error while uploading on cover image");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    _req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage?.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Cover image updated successfully"));
 });
 
 export {
@@ -223,5 +340,9 @@ export {
   logoutUser,
   refreshAccessToken,
   changePassword,
-  getCurrentUser
+  changeEmail,
+  getCurrentUser,
+  updateUserProfile,
+  updateUserAvatar,
+  updateCoverImage,
 };
