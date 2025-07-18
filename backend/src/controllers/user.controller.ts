@@ -4,15 +4,24 @@ import { ApiError } from "../utils/ApiError";
 import { User } from "../models/user.model";
 import { ApiResponse } from "../utils/ApiResponse";
 import { UserI } from "../types/user.types";
+import { AuthRequest } from "../middlewares/auth.middleware";
 
 const generateAccessAndRefreshTokens = async (user: UserI) => {
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
+    try {
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
 
-    user.refreshToken = refreshToken;
-    await user.save({ validateBeforeSave: false });
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false });
 
-    return { accessToken, refreshToken };
+        return { accessToken, refreshToken };
+    } catch (error) {
+        console.log("Error generating access and refresh tokens:", error);
+        throw new ApiError(
+            500,
+            "Something went wrong while generating referesh and access token",
+        );
+    }
 };
 
 const registerUser = asyncHandler(async (req: Request, res: Response) => {
@@ -98,4 +107,32 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
         );
 });
 
-export { registerUser, loginUser };
+const logoutUser = asyncHandler(async (req: Request, res: Response) => {
+    const _req = req as AuthRequest;
+    await User.findByIdAndUpdate(
+        _req.user._id,
+        {
+            $unset: {
+                refreshToken: 1,
+            },
+        },
+        {
+            new: true,
+        },
+    );
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+    };
+
+    return res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(new ApiResponse(200, {}, "User logged Out"));
+});
+
+
+
+export { registerUser, loginUser, logoutUser };
