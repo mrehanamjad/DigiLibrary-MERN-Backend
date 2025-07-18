@@ -4,11 +4,8 @@ import { ApiError } from "../utils/ApiError";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { config } from "../config/config";
 import { User } from "../models/user.model";
-import { UserI } from "../types/user.types";
+import { AuthRequest } from "../types/user.types";
 
-export interface AuthRequest extends Request {
-    user: Omit<UserI, "password" | "refreshToken">;
-}
 
 export const verifyJWT = asyncHandler(
     async (req: Request, _, next: NextFunction) => {
