@@ -11,6 +11,10 @@ const _config = {
     refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET as string,
     accessTokenExpiry: process.env.ACCESS_TOKEN_EXPIRY as string,
     refreshTokenExpiry: process.env.REFRESH_TOKEN_EXPIRY as string,
+    corsOrigin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    imagekitPublicKey: process.env.IMAGEKIT_PUBLIC_KEY as string,
+    imagekitPrivateKey: process.env.IMAGEKIT_PRIVATE_KEY as string,
+    imagekitUrlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT as string,
 }
 
 export const config = Object.freeze(_config);
