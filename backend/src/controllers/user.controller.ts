@@ -291,13 +291,13 @@ const updateUserAvatar = asyncHandler(async (req: Request, res: Response) => {
     _req.user?._id,
     {
       $set: {
-        avatar: {url: avatar?.url, fileId:avatar?.fileId},
+        avatar: { url: avatar?.url, fileId: avatar?.fileId },
       },
     },
     { new: true }
   ).select("-password -refreshToken");
 
-  await deleteFileImagekit(_req.user.avatar?.fileId as string)
+  await deleteFileImagekit(_req.user.avatar?.fileId as string);
 
   return res
     .status(200)
@@ -327,18 +327,56 @@ const updateCoverImage = asyncHandler(async (req: Request, res: Response) => {
     _req.user?._id,
     {
       $set: {
-        coverImage: {url: coverImage?.url, fileId:coverImage?.fileId},
+        coverImage: { url: coverImage?.url, fileId: coverImage?.fileId },
       },
     },
     { new: true }
   ).select("-password -refreshToken");
 
-    await deleteFileImagekit(_req.user.coverImage?.fileId as string)
+  await deleteFileImagekit(_req.user.coverImage?.fileId as string);
 
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Cover image updated successfully"));
 });
+
+const deleteAvatarOrCoverImage = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { type } = req.params;
+
+    if (!["avatar", "cover-image"].includes(type)) {
+      throw new ApiError(
+        400,
+        "Invalid image type. Must be 'avatar' or 'cover-image'"
+      );
+    }
+
+    const typeDB = type === "avatar" ? "avatar" : "coverImage";
+
+    const _req = req as AuthRequest;
+    const fileId = _req.user[typeDB]?.fileId;
+
+    if (!fileId) {
+      throw new ApiError(404, `${type} not found or already deleted`);
+    }
+
+    await deleteFileImagekit(fileId);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      _req.user._id,
+      {
+        $set: {
+          [typeDB]: { url: "", fileId: "" },
+        },
+      },
+      { new: true }
+    ).select("-password -refreshToken");
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, updatedUser, `${type} removed successfully`));
+  }
+);
 
 export {
   registerUser,
@@ -351,4 +389,5 @@ export {
   updateUserProfile,
   updateUserAvatar,
   updateCoverImage,
+  deleteAvatarOrCoverImage,
 };

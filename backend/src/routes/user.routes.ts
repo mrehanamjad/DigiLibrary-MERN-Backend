@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
     changeEmail,
   changePassword,
+  deleteAvatarOrCoverImage,
   getCurrentUser,
   loginUser,
   logoutUser,
@@ -28,6 +29,7 @@ router.route("/change-email").patch(verifyJWT,changeEmail)
 router.route("/update-profile").patch(verifyJWT,updateUserProfile)
 router.route("/avatar").patch(verifyJWT,upload.single("avatar"),updateUserAvatar)
 router.route("/cover-image").patch(verifyJWT,upload.single("coverImage"),updateCoverImage)
+router.route("/:type").delete(verifyJWT,deleteAvatarOrCoverImage)
 
 
 export default router;
