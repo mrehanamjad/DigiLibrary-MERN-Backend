@@ -37,12 +37,12 @@ const userSchema = new mongoose.Schema<UserI>(
       required: [true, "Password is required"],
     },
     avatar: {
-      type: String,
-      default: "",
+      url: { type: String, default: "" },
+      fileId: { type: String, default: "" }, // imagekit fileId
     },
     coverImage: {
-      type: String,
-      default: "",
+      url: { type: String, default: "" },
+      fileId: { type: String, default: "" },
     },
     refreshToken: {
       type: String,

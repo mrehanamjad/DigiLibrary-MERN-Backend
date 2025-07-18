@@ -7,7 +7,7 @@ import { UserI } from "../types/user.types";
 import { AuthRequest } from "../types/user.types";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { config } from "../config/config";
-import { uploadOnImageKit } from "../utils/imagekit";
+import { deleteFileImagekit, uploadOnImageKit } from "../utils/imagekit";
 
 const generateAccessAndRefreshTokens = async (user: UserI) => {
   try {
@@ -279,7 +279,8 @@ const updateUserAvatar = asyncHandler(async (req: Request, res: Response) => {
 
   const avatar = await uploadOnImageKit(
     avatarLocalPath,
-    req.file?.filename as string
+    req.file?.filename as string,
+    true
   );
 
   if (!avatar?.url) {
@@ -290,11 +291,13 @@ const updateUserAvatar = asyncHandler(async (req: Request, res: Response) => {
     _req.user?._id,
     {
       $set: {
-        avatar: avatar?.url,
+        avatar: {url: avatar?.url, fileId:avatar?.fileId},
       },
     },
     { new: true }
-  ).select("-password");
+  ).select("-password -refreshToken");
+
+  await deleteFileImagekit(_req.user.avatar?.fileId as string)
 
   return res
     .status(200)
@@ -312,7 +315,8 @@ const updateCoverImage = asyncHandler(async (req: Request, res: Response) => {
 
   const coverImage = await uploadOnImageKit(
     coverImageLocalPath,
-    req.file?.filename as string
+    req.file?.filename as string,
+    true
   );
 
   if (!coverImage?.url) {
@@ -323,11 +327,13 @@ const updateCoverImage = asyncHandler(async (req: Request, res: Response) => {
     _req.user?._id,
     {
       $set: {
-        coverImage: coverImage?.url,
+        coverImage: {url: coverImage?.url, fileId:coverImage?.fileId},
       },
     },
     { new: true }
-  ).select("-password");
+  ).select("-password -refreshToken");
+
+    await deleteFileImagekit(_req.user.coverImage?.fileId as string)
 
   return res
     .status(200)
