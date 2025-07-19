@@ -344,7 +344,7 @@ const deleteAvatarOrCoverImage = asyncHandler(
   async (req: Request, res: Response) => {
     const { type } = req.params;
 
-    console.log("params",req.params)
+    console.log("params",type)
 
     if (!["avatar", "cover-image"].includes(type)) {
       throw new ApiError(
@@ -380,6 +380,35 @@ const deleteAvatarOrCoverImage = asyncHandler(
   }
 );
 
+const deleteUserAccount = asyncHandler(async (req: Request, res: Response) => {
+  const { password } = req.body;
+
+  if (!password) {
+    throw new ApiError(400, "Password is required to delete the account");
+  }
+
+  const _req = req as AuthRequest;
+  const user = await User.findById(_req.user._id);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isPasswordValid =  await user.isPasswordCorrect(password);
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Incorrect password");
+  }
+
+  await User.findByIdAndDelete(_req.user._id);
+
+  // Clear refresh token cookie if used
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "User account deleted successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -392,4 +421,5 @@ export {
   updateUserAvatar,
   updateCoverImage,
   deleteAvatarOrCoverImage,
+  deleteUserAccount,
 };
