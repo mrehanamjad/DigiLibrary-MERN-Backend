@@ -17,6 +17,7 @@ app.use(cookieParser());
 
 // routes
 import userRouter from "./routes/user.routes";
+import bookRouter from "./routes/book.routes";
 
 
 
@@ -24,5 +25,6 @@ import userRouter from "./routes/user.routes";
 // routes declaration
 
 app.use("/api/v1/users", userRouter); 
+app.use("/api/v1/books",bookRouter)
 
 export { app };

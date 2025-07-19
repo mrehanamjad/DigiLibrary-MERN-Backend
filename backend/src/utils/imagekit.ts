@@ -25,7 +25,7 @@ const uploadOnImageKit = async (
       fileName,
       folder,
     });
-
+    
     return result;
   } catch (error) {
     console.error("Error uploading image:", error);

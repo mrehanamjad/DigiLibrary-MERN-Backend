@@ -2,6 +2,22 @@ import mongoose from "mongoose";
 import { BookI } from "../types/book.types";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
+const fileObjectSchema = new mongoose.Schema(
+  {
+    url: {
+      type: String,
+      required: [true, "URL is required"],
+      default: "",
+    },
+    fileId: {
+      type: String,
+      required: [true, "File ID is required"],
+      default: "",
+    },
+  },
+  { _id: false } // Prevents _id creation for subdocuments
+);
+
 const bookSchema = new mongoose.Schema<BookI>(
   {
     title: {
@@ -14,16 +30,16 @@ const bookSchema = new mongoose.Schema<BookI>(
       required: [true, "Description is required"],
     },
     author: {
-      type: String,
+      type: [String],
       required: [true, "Author name is required"],
     },
     coverImage: {
-      type: String,
-      required: [true, "Cover image URL is required"],
+      type: fileObjectSchema,
+      required: true,
     },
     file: {
-      type: String,
-      required: [true, "Book file URL is required"],
+      type: fileObjectSchema,
+      required: true,
     },
     price: {
       type: Number,
@@ -65,10 +81,17 @@ const bookSchema = new mongoose.Schema<BookI>(
   }
 );
 
+// Indexes for search and filters
+bookSchema.index({
+  title: "text",
+  description: "text",
+  author: "text",
+  tags: "text",
+});
 
-bookSchema.index({ title: "text", description: "text", author: "text", tags: "text" }); // Full-text search
 bookSchema.index({ category: 1 });
 bookSchema.index({ userId: 1 });
+bookSchema.index({ author: 1 });
 bookSchema.index({ isFree: 1 });
 bookSchema.index({ isPublished: 1 });
 bookSchema.index({ price: 1 });
@@ -76,6 +99,7 @@ bookSchema.index({ views: -1 });
 bookSchema.index({ downloads: -1 });
 bookSchema.index({ createdAt: -1 });
 
-bookSchema.plugin(mongooseAggregatePaginate)
+// Plugin
+bookSchema.plugin(mongooseAggregatePaginate);
 
 export const Book = mongoose.model<BookI>("Book", bookSchema);
