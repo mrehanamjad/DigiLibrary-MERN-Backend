@@ -28,6 +28,7 @@ const bookSchema = new mongoose.Schema<BookI>(
     description: {
       type: String,
       required: [true, "Description is required"],
+      trim: true,
     },
     author: {
       type: [String],

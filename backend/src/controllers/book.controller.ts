@@ -5,7 +5,8 @@ import { ApiResponse } from "../utils/ApiResponse";
 import { uploadOnImageKit } from "../utils/imagekit";
 import { Book } from "../models/book.model";
 import { AuthRequest } from "../types/user.types";
-import { FindObjectI, SortObjectI } from "../types/book.types";
+import { MatchStageI, SortStageI } from "../types/book.types";
+import mongoose from "mongoose";
 
 interface MulterFileFields {
   coverImage: Express.Multer.File[];
@@ -99,35 +100,93 @@ export const getAllBooks = asyncHandler(async (req: Request, res: Response) => {
     sortType = "desc",
     author,
     category,
-    isFree, // "true" or "false"
+    isFree,
     userId,
   } = req.query;
 
   const skipItems = (Number(page) - 1) * Number(limit);
   const limitItems = Number(limit);
 
-  const findObj: FindObjectI = {};
-  if (typeof query === "string" && query.trim().length > 0) {
-    findObj.$text = { $search: query.trim() };
-  }
-  if (userId && typeof userId === "string") findObj.userId = userId;
-  if (category && typeof category === "string") findObj.category = category;
-  if (author && typeof author === "string") findObj.author = author;
-  if (typeof isFree === "string") {
-    findObj.isFree = isFree === "true";
-  }
+  // const matchStage: any = { isPublished: true };
 
-  // Sorting
-  const sortObj: SortObjectI = {};
-  sortObj[sortBy as string] = sortType === "desc" ? -1 : 1;
+  // if (userId && typeof userId === "string") {
+  //   matchStage.userId = new mongoose.Types.ObjectId(userId);
+  // }
 
-  console.log("find Obj: ", findObj);
+  // if (category && typeof category === "string") {
+  //   matchStage.category = category;
+  // }
 
-  const books = await Book.find(findObj)
-    .sort(sortObj)
-    .skip(skipItems)
-    .limit(limitItems)
-    .lean();
+  // if (author && typeof author === "string") {
+  //   matchStage.author = author;
+  // }
+
+  // if (typeof isFree === "string") {
+  //   matchStage.isFree = isFree === "true";
+  // }
+
+  // Match conditions for filters
+  const matchStage: MatchStageI = {
+    isPublished: true,
+    ...(userId &&
+      typeof userId === "string" && {
+        userId: new mongoose.Types.ObjectId(userId),
+      }),
+    ...(category && typeof category === "string" && { category }),
+    ...(author && typeof author === "string" && { author }),
+    ...(typeof isFree === "string" && { isFree: isFree === "true" }),
+  };
+
+  console.log("match stage", matchStage);
+
+  // Optional full-text search
+  const searchStage =
+    typeof query === "string" && query.trim().length > 0
+      ? [{ $match: { $text: { $search: query.trim() } } }]
+      : [];
+
+  // Sorting object
+  const sortStage: SortStageI = {};
+  sortStage[sortBy as string] = sortType === "desc" ? -1 : 1;
+
+  const books = await Book.aggregate([
+    ...searchStage,
+    { $match: matchStage },
+    { $sort: sortStage },
+    { $skip: skipItems },
+    { $limit: limitItems },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    { $unwind: "$user" },
+    {
+      $project: {
+        title: 1,
+        description: 1,
+        author: 1,
+        price: 1,
+        isFree: 1,
+        category: 1,
+        tags: 1,
+        views: 1,
+        downloads: 1,
+        isPublished: 1,
+        createdAt: 1,
+        coverImage: 1,
+        file: 1,
+        user: {
+          _id: "$user._id",
+          username: "$user.username",
+          fullName: "$user.fullName",
+        },
+      },
+    },
+  ]);
 
   if (!books) {
     throw new ApiError(404, "No books found");

@@ -24,14 +24,18 @@ export interface BookI extends Document {
 }
 
 
-export interface SortObjectI {
+export interface SortStageI {
   [key: string]: 1 | -1;
 }
 
-export interface FindObjectI {
-  $text?: { $search: string };
+export interface searchStageI {
+  $match?: {$text: { $search: string }}
+}
+
+export interface MatchStageI {
+  isPublished: boolean;
   author?: string;
   category?: string;
-  userId?: string; 
+  userId?: mongoose.Types.ObjectId; 
   isFree?: boolean;
 }
