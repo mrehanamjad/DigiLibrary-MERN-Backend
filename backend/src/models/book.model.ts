@@ -1,6 +1,8 @@
-import mongoose from "mongoose";
+import mongoose, { AggregatePaginateModel } from "mongoose";
 import { BookI } from "../types/book.types";
-import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+import aggregatePaginate from "mongoose-aggregate-paginate-v2";
+
+interface BookModel extends AggregatePaginateModel<BookI> {}
 
 const fileObjectSchema = new mongoose.Schema(
   {
@@ -101,6 +103,6 @@ bookSchema.index({ downloads: -1 });
 bookSchema.index({ createdAt: -1 });
 
 // Plugin
-bookSchema.plugin(mongooseAggregatePaginate);
+bookSchema.plugin(aggregatePaginate);
 
-export const Book = mongoose.model<BookI>("Book", bookSchema);
+export const Book = mongoose.model<BookI, BookModel>("Book", bookSchema);

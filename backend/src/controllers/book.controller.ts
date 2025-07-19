@@ -91,7 +91,95 @@ const publishABook = asyncHandler(async (req: Request, res: Response) => {
 const updateBook = asyncHandler(async (req: Request, res: Response) => {});
 const deleteBook = asyncHandler(async (req: Request, res: Response) => {});
 
-export const getAllBooks = asyncHandler(async (req: Request, res: Response) => {
+// const getAllBooks = asyncHandler(async (req: Request, res: Response) => {
+//   const {
+//     page = 1,
+//     limit = 10,
+//     query = "",
+//     sortBy = "createdAt",
+//     sortType = "desc",
+//     author,
+//     category,
+//     isFree,
+//     userId,
+//   } = req.query;
+
+//   const skipItems = (Number(page) - 1) * Number(limit);
+//   const limitItems = Number(limit);
+
+//   // Match conditions for filters
+//   const matchStage: MatchStageI = {
+//     isPublished: true,
+//     ...(userId &&
+//       typeof userId === "string" && {
+//         userId: new mongoose.Types.ObjectId(userId),
+//       }),
+//     ...(category && typeof category === "string" && { category }),
+//     ...(author && typeof author === "string" && { author }),
+//     ...(typeof isFree === "string" && { isFree: isFree === "true" }),
+//   };
+
+//   console.log("match stage", matchStage);
+
+//   // Optional full-text search
+//   const searchStage =
+//     typeof query === "string" && query.trim().length > 0
+//       ? [{ $match: { $text: { $search: query.trim() } } }]
+//       : [];
+
+//   // Sorting object
+//   const sortStage: SortStageI = {};
+//   sortStage[sortBy as string] = sortType === "desc" ? -1 : 1;
+
+//   const books = await Book.aggregate([
+//     ...searchStage,
+//     { $match: matchStage },
+//     { $sort: sortStage },
+//     { $skip: skipItems },
+//     { $limit: limitItems },
+//     {
+//       $lookup: {
+//         from: "users",
+//         localField: "userId",
+//         foreignField: "_id",
+//         as: "user",
+//       },
+//     },
+//     { $unwind: "$user" },
+//     {
+//       $project: {
+//         title: 1,
+//         description: 1,
+//         author: 1,
+//         price: 1,
+//         isFree: 1,
+//         category: 1,
+//         tags: 1,
+//         views: 1,
+//         downloads: 1,
+//         isPublished: 1,
+//         createdAt: 1,
+//         coverImage: 1,
+//         file: 1,
+//         user: {
+//           _id: "$user._id",
+//           username: "$user.username",
+//           fullName: "$user.fullName",
+//         },
+//       },
+//     },
+//   ]);
+
+//   if (!books) {
+//     throw new ApiError(404, "No books found");
+//   }
+
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, books, "Books fetched successfully"));
+// });
+
+const getAllBooks = asyncHandler(async (req: Request, res: Response) => {
   const {
     page = 1,
     limit = 10,
@@ -103,27 +191,6 @@ export const getAllBooks = asyncHandler(async (req: Request, res: Response) => {
     isFree,
     userId,
   } = req.query;
-
-  const skipItems = (Number(page) - 1) * Number(limit);
-  const limitItems = Number(limit);
-
-  // const matchStage: any = { isPublished: true };
-
-  // if (userId && typeof userId === "string") {
-  //   matchStage.userId = new mongoose.Types.ObjectId(userId);
-  // }
-
-  // if (category && typeof category === "string") {
-  //   matchStage.category = category;
-  // }
-
-  // if (author && typeof author === "string") {
-  //   matchStage.author = author;
-  // }
-
-  // if (typeof isFree === "string") {
-  //   matchStage.isFree = isFree === "true";
-  // }
 
   // Match conditions for filters
   const matchStage: MatchStageI = {
@@ -149,12 +216,11 @@ export const getAllBooks = asyncHandler(async (req: Request, res: Response) => {
   const sortStage: SortStageI = {};
   sortStage[sortBy as string] = sortType === "desc" ? -1 : 1;
 
-  const books = await Book.aggregate([
+  // Build the aggregation pipeline
+  const aggregationPipeline = [
     ...searchStage,
     { $match: matchStage },
     { $sort: sortStage },
-    { $skip: skipItems },
-    { $limit: limitItems },
     {
       $lookup: {
         from: "users",
@@ -186,20 +252,43 @@ export const getAllBooks = asyncHandler(async (req: Request, res: Response) => {
         },
       },
     },
-  ]);
+  ];
 
-  if (!books) {
+  // Pagination options
+  const options = {
+    page: Number(page),
+    limit: Number(limit),
+    customLabels: {
+      totalDocs: 'totalBooks',
+      docs: 'books',
+      limit: 'limit',
+      page: 'currentPage',
+      nextPage: 'nextPage',
+      prevPage: 'prevPage',
+      totalPages: 'totalPages',
+      pagingCounter: 'pagingCounter',
+      meta: 'pagination',
+    },
+  };
+
+  // Use aggregatePaginate
+  const result = await Book.aggregatePaginate(
+    Book.aggregate(aggregationPipeline),
+    options
+  );
+
+  if (!result.books) {
     throw new ApiError(404, "No books found");
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, books, "Books fetched successfully"));
+    .json(new ApiResponse(200, result, "Books fetched successfully"));
 });
 
 const getBookById = asyncHandler(async (req: Request, res: Response) => {});
 
-export { publishABook };
+export { publishABook,getAllBooks };
 
 /*
 isFree = false // only paid
