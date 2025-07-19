@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { BookI } from "../types/book.types";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const bookSchema = new mongoose.Schema<BookI>(
   {
@@ -74,5 +75,7 @@ bookSchema.index({ price: 1 });
 bookSchema.index({ views: -1 });
 bookSchema.index({ downloads: -1 });
 bookSchema.index({ createdAt: -1 });
+
+bookSchema.plugin(mongooseAggregatePaginate)
 
 export const Book = mongoose.model<BookI>("Book", bookSchema);

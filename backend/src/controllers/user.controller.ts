@@ -344,6 +344,8 @@ const deleteAvatarOrCoverImage = asyncHandler(
   async (req: Request, res: Response) => {
     const { type } = req.params;
 
+    console.log("params",req.params)
+
     if (!["avatar", "cover-image"].includes(type)) {
       throw new ApiError(
         400,
