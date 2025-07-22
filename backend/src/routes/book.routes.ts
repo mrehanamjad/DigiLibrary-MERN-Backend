@@ -6,6 +6,7 @@ import {
   getAllBooks,
   getBookById,
   publishABook,
+  togglePublishStatus,
   updateBook,
   updateBookCoverImage,
 } from "../controllers/book.controller";
@@ -33,5 +34,10 @@ router
 router
   .route("/:bookId/cover-image")
   .patch(verifyJWT, upload.single("coverImage"), updateBookCoverImage);
+
+
+router
+  .patch("/:bookId/toggle-publish", verifyJWT, togglePublishStatus);
+
 
 export default router;

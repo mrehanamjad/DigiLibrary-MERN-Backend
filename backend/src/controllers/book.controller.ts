@@ -384,7 +384,28 @@ const getBookById = asyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(200, book[0], "Book fetched successfully"));
 });
 
+const togglePublishStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { bookId } = req.params;
+  const _req = req as AuthRequest;
 
+  const book = await Book.findById(bookId);
+  if (!book) {
+    throw new ApiError(404, "Book not found");
+  }
+
+  if (book.userId.toString() !== _req.user._id.toString()) {
+    throw new ApiError(
+      403,
+      "Unauthorized user"
+    );
+  }
+
+  book.isPublished = !book.isPublished
+  book.save({validateBeforeSave: false})
+
+  res.status(200).json(new ApiResponse(200, book, `Book is now ${book.isPublished ? "published" : "unpublished"}`,));
+
+})
 
 export {
   publishABook,
@@ -393,6 +414,7 @@ export {
   deleteBook,
   updateBookCoverImage,
   getBookById,
+  togglePublishStatus
 };
 
 /*
