@@ -33,9 +33,23 @@ export interface searchStageI {
 }
 
 export interface MatchStageI {
-  isPublished: boolean;
+  isPublished?: boolean;
   author?: string;
   category?: string;
   userId?: mongoose.Types.ObjectId; 
   isFree?: boolean;
+}
+
+
+export interface GetBooksParams {
+  page?: string | number;
+  limit?: string | number;
+  query?: string;
+  sortBy?: string;
+  sortType?: "asc" | "desc";
+  author?: string;
+  category?: string;
+  isFree?: string;
+  userId?: string;
+  owner?: boolean; // true for getOwnerBooks
 }

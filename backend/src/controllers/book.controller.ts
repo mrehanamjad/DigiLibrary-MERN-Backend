@@ -5,13 +5,104 @@ import { ApiResponse } from "../utils/ApiResponse";
 import { deleteFileImagekit, uploadOnImageKit } from "../utils/imagekit";
 import { Book } from "../models/book.model";
 import { AuthRequest } from "../types/user.types";
-import { MatchStageI, SortStageI } from "../types/book.types";
+import { GetBooksParams, MatchStageI, SortStageI } from "../types/book.types";
 import mongoose from "mongoose";
 
 interface MulterFileFields {
   coverImage: Express.Multer.File[];
   file: Express.Multer.File[];
 }
+
+const getBooks = async ({
+  page = 1,
+  limit = 10,
+  query = "",
+  sortBy = "createdAt",
+  sortType = "desc",
+  author,
+  category,
+  isFree,
+  userId,
+  owner = false,
+}: GetBooksParams) => {
+  const matchStage: MatchStageI = {
+    ...(!owner && { isPublished: true }),
+    ...(userId && mongoose.Types.ObjectId.isValid(userId)
+      ? { userId: new mongoose.Types.ObjectId(userId) }
+      : {}),
+    ...(category && { category }),
+    ...(author && { author }),
+    ...(typeof isFree === "string" && { isFree: isFree === "true" }),
+  };
+
+  const searchStage =
+    query.trim().length > 0
+      ? [{ $match: { $text: { $search: query.trim() } } }]
+      : [];
+
+  const sortStage: SortStageI = {
+    [sortBy]: sortType === "desc" ? -1 : 1,
+  };
+
+  const aggregationPipeline = [
+    ...searchStage,
+    { $match: matchStage },
+    { $sort: sortStage },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    { $unwind: "$user" },
+    {
+      $project: {
+        title: 1,
+        description: 1,
+        author: 1,
+        price: 1,
+        isFree: 1,
+        category: 1,
+        tags: 1,
+        views: 1,
+        downloads: 1,
+        isPublished: 1,
+        createdAt: 1,
+        coverImage: 1,
+        file: 1,
+        user: {
+          _id: "$user._id",
+          username: "$user.username",
+          fullName: "$user.fullName",
+          avatar: "$user.avatar",
+        },
+      },
+    },
+  ];
+
+  const options = {
+    page: Number(page),
+    limit: Number(limit),
+    customLabels: {
+      totalDocs: "totalBooks",
+      docs: "books",
+      limit: "limit",
+      page: "currentPage",
+      nextPage: "nextPage",
+      prevPage: "prevPage",
+      totalPages: "totalPages",
+      pagingCounter: "pagingCounter",
+      meta: "pagination",
+    },
+  };
+
+  return await Book.aggregatePaginate(
+    Book.aggregate(aggregationPipeline),
+    options
+  );
+};
 
 const publishABook = asyncHandler(async (req: Request, res: Response) => {
   const {
@@ -34,10 +125,9 @@ const publishABook = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(400, "All fields are required");
   }
 
- if (Number(price) < 0) {
-  throw new ApiError(400, "Invalid price. Price cannot be negative.");
-}
-
+  if (Number(price) < 0) {
+    throw new ApiError(400, "Invalid price. Price cannot be negative.");
+  }
 
   const files = req.files as unknown as MulterFileFields;
   // We use as unknown as MulterFileFields because req.files is of type any or some incompatible type, and TypeScript doesn’t allow direct casting from an unrelated type (like any[], File[], or Express.Multer.File[]) to MulterFileFields without first casting to unknown.
@@ -136,7 +226,8 @@ const updateBook = asyncHandler(async (req: Request, res: Response) => {
     ) {
       (book[key as keyof typeof book] as any) = value;
       if (key == "price") {
-        if (book.price < 0) throw new ApiError(400, "Price can not be negative");
+        if (book.price < 0)
+          throw new ApiError(400, "Price can not be negative");
         book.isFree = book.price <= 0;
       }
     }
@@ -223,103 +314,7 @@ const deleteBook = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const getAllBooks = asyncHandler(async (req: Request, res: Response) => {
-  const {
-    page = 1,
-    limit = 10,
-    query = "",
-    sortBy = "createdAt",
-    sortType = "desc",
-    author,
-    category,
-    isFree,
-    userId,
-  } = req.query;
-
-  // Match conditions for filters
-  const matchStage: MatchStageI = {
-    isPublished: true,
-    ...(userId &&
-      typeof userId === "string" && {
-        userId: new mongoose.Types.ObjectId(userId),
-      }),
-    ...(category && typeof category === "string" && { category }),
-    ...(author && typeof author === "string" && { author }),
-    ...(typeof isFree === "string" && { isFree: isFree === "true" }),
-  };
-
-  console.log("match stage", matchStage);
-
-  // Optional full-text search
-  const searchStage =
-    typeof query === "string" && query.trim().length > 0
-      ? [{ $match: { $text: { $search: query.trim() } } }]
-      : [];
-
-  // Sorting object
-  const sortStage: SortStageI = {};
-  sortStage[sortBy as string] = sortType === "desc" ? -1 : 1;
-
-  // Build the aggregation pipeline
-  const aggregationPipeline = [
-    ...searchStage,
-    { $match: matchStage },
-    { $sort: sortStage },
-    {
-      $lookup: {
-        from: "users",
-        localField: "userId",
-        foreignField: "_id",
-        as: "user",
-      },
-    },
-    { $unwind: "$user" },
-    {
-      $project: {
-        title: 1,
-        description: 1,
-        author: 1,
-        price: 1,
-        isFree: 1,
-        category: 1,
-        tags: 1,
-        views: 1,
-        downloads: 1,
-        isPublished: 1,
-        createdAt: 1,
-        coverImage: 1,
-        file: 1,
-        user: {
-          _id: "$user._id",
-          username: "$user.username",
-          fullName: "$user.fullName",
-          avatar: "$user.avatar",
-        },
-      },
-    },
-  ];
-
-  // Pagination options
-  const options = {
-    page: Number(page),
-    limit: Number(limit),
-    customLabels: {
-      totalDocs: "totalBooks",
-      docs: "books",
-      limit: "limit",
-      page: "currentPage",
-      nextPage: "nextPage",
-      prevPage: "prevPage",
-      totalPages: "totalPages",
-      pagingCounter: "pagingCounter",
-      meta: "pagination",
-    },
-  };
-
-  // Use aggregatePaginate
-  const result = await Book.aggregatePaginate(
-    Book.aggregate(aggregationPipeline),
-    options
-  );
+  const result = await getBooks({ ...req.query });
 
   if (!result.books) {
     throw new ApiError(404, "No books found");
@@ -328,6 +323,24 @@ const getAllBooks = asyncHandler(async (req: Request, res: Response) => {
   return res
     .status(200)
     .json(new ApiResponse(200, result, "Books fetched successfully"));
+});
+
+const getOwnerBooks = asyncHandler(async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
+
+  const result = await getBooks({
+    ...req.query,
+    userId: _req.user?._id,
+    owner: true,
+  });
+
+  if (!result.books) {
+    throw new ApiError(404, "No books found for this user");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, result, "Your books fetched successfully"));
 });
 
 const getBookById = asyncHandler(async (req: Request, res: Response) => {
@@ -384,28 +397,34 @@ const getBookById = asyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(200, book[0], "Book fetched successfully"));
 });
 
-const togglePublishStatus = asyncHandler(async (req: Request, res: Response) => {
-  const { bookId } = req.params;
-  const _req = req as AuthRequest;
+const togglePublishStatus = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { bookId } = req.params;
+    const _req = req as AuthRequest;
 
-  const book = await Book.findById(bookId);
-  if (!book) {
-    throw new ApiError(404, "Book not found");
+    const book = await Book.findById(bookId);
+    if (!book) {
+      throw new ApiError(404, "Book not found");
+    }
+
+    if (book.userId.toString() !== _req.user._id.toString()) {
+      throw new ApiError(403, "Unauthorized user");
+    }
+
+    book.isPublished = !book.isPublished;
+    book.save({ validateBeforeSave: false });
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          book,
+          `Book is now ${book.isPublished ? "published" : "unpublished"}`
+        )
+      );
   }
-
-  if (book.userId.toString() !== _req.user._id.toString()) {
-    throw new ApiError(
-      403,
-      "Unauthorized user"
-    );
-  }
-
-  book.isPublished = !book.isPublished
-  book.save({validateBeforeSave: false})
-
-  res.status(200).json(new ApiResponse(200, book, `Book is now ${book.isPublished ? "published" : "unpublished"}`,));
-
-})
+);
 
 export {
   publishABook,
@@ -414,7 +433,8 @@ export {
   deleteBook,
   updateBookCoverImage,
   getBookById,
-  togglePublishStatus
+  togglePublishStatus,
+  getOwnerBooks,
 };
 
 /*
