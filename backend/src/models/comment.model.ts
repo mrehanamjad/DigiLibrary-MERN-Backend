@@ -1,5 +1,8 @@
-import mongoose from "mongoose";
+import mongoose, { AggregatePaginateModel } from "mongoose";
 import { CommentI } from "../types/comment.types";
+import aggregatePaginate from "mongoose-aggregate-paginate-v2";
+
+interface CommentModelI extends AggregatePaginateModel<CommentI> {}
 
 const commentSchema = new mongoose.Schema<CommentI>(
   {
@@ -18,6 +21,11 @@ const commentSchema = new mongoose.Schema<CommentI>(
       required: [true, "Comment text is required"],
       trim: true,
     },
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
+      default: null,
+    },
     parentCommentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Comment",
@@ -31,6 +39,12 @@ const commentSchema = new mongoose.Schema<CommentI>(
 commentSchema.index({ bookId: 1 });
 commentSchema.index({ userId: 1 });
 commentSchema.index({ parentCommentId: 1 });
+commentSchema.index({ replyTo: 1 });
+
+commentSchema.plugin(aggregatePaginate);
+
+export const Comment = mongoose.model<CommentI,CommentModelI>("Comment", commentSchema);
 
 
-export const Comment = mongoose.model<CommentI>("Comment", commentSchema);
+
+

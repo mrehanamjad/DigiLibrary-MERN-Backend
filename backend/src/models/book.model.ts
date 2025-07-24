@@ -2,7 +2,7 @@ import mongoose, { AggregatePaginateModel } from "mongoose";
 import { BookI } from "../types/book.types";
 import aggregatePaginate from "mongoose-aggregate-paginate-v2";
 
-interface BookModel extends AggregatePaginateModel<BookI> {}
+interface BookModelI extends AggregatePaginateModel<BookI> {}
 
 const fileObjectSchema = new mongoose.Schema(
   {
@@ -105,4 +105,4 @@ bookSchema.index({ createdAt: -1 });
 // Plugin
 bookSchema.plugin(aggregatePaginate);
 
-export const Book = mongoose.model<BookI, BookModel>("Book", bookSchema);
+export const Book = mongoose.model<BookI, BookModelI>("Book", bookSchema);
