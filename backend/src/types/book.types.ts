@@ -16,6 +16,8 @@ export interface BookI extends Document {
   userId: mongoose.Types.ObjectId;
   category: string;
   tags: string[];
+  pages: number;
+  language: string;
   views: number;
   downloads: number;
   isPublished: boolean;

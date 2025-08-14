@@ -7,6 +7,7 @@ import { Book } from "../models/book.model";
 import { AuthRequest } from "../types/user.types";
 import { GetBooksParams, MatchStageI, SortStageI } from "../types/book.types";
 import mongoose from "mongoose";
+import { getPaginationOptions } from "../utils/helper";
 
 interface MulterFileFields {
   coverImage: Express.Multer.File[];
@@ -60,18 +61,15 @@ const getBooks = async ({
     {
       $project: {
         title: 1,
-        description: 1,
         author: 1,
         price: 1,
         isFree: 1,
         category: 1,
-        tags: 1,
+        language: 1,
         views: 1,
-        downloads: 1,
         isPublished: 1,
         createdAt: 1,
         coverImage: 1,
-        file: 1,
         user: {
           _id: "$user._id",
           username: "$user.username",
@@ -82,21 +80,12 @@ const getBooks = async ({
     },
   ];
 
-  const options = {
-    page: Number(page),
-    limit: Number(limit),
-    customLabels: {
-      totalDocs: "totalBooks",
-      docs: "books",
-      limit: "limit",
-      page: "currentPage",
-      nextPage: "nextPage",
-      prevPage: "prevPage",
-      totalPages: "totalPages",
-      pagingCounter: "pagingCounter",
-      meta: "pagination",
-    },
-  };
+  const options = getPaginationOptions(
+    Number(page),
+    Number(limit),
+    "totalBooks",
+    "books"
+  );
 
   return await Book.aggregatePaginate(
     Book.aggregate(aggregationPipeline),
@@ -112,6 +101,8 @@ const publishABook = asyncHandler(async (req: Request, res: Response) => {
     price = 0,
     category,
     tags = [],
+    language,
+    pages,
     isPublished,
   } = req.body;
 
@@ -120,7 +111,8 @@ const publishABook = asyncHandler(async (req: Request, res: Response) => {
     !description ||
     author.length == 0 ||
     !category ||
-    isPublished === undefined
+    isPublished === undefined || 
+    !pages
   ) {
     throw new ApiError(400, "All fields are required");
   }
@@ -165,6 +157,8 @@ const publishABook = asyncHandler(async (req: Request, res: Response) => {
     price,
     isFree: Number(price) === 0,
     userId: _req.user._id,
+    language,
+    pages,
     category,
     tags,
     isPublished,
@@ -192,6 +186,8 @@ const updateBook = asyncHandler(async (req: Request, res: Response) => {
     description,
     author,
     price,
+        language,
+    pages,
     category,
     tags = [],
     isPublished,
@@ -214,6 +210,8 @@ const updateBook = asyncHandler(async (req: Request, res: Response) => {
     description,
     author,
     price,
+        language,
+    pages,
     category,
     tags,
     isPublished,
@@ -370,14 +368,16 @@ const getBookById = asyncHandler(async (req: Request, res: Response) => {
         author: 1,
         price: 1,
         isFree: 1,
+        language: 1,
+        pages: 1,
         category: 1,
         tags: 1,
         views: 1,
-        downloads: 1,
+        // downloads: 1,
         isPublished: 1,
         createdAt: 1,
         coverImage: 1,
-        file: 1,
+        // file: 1,
         user: {
           _id: "$user._id",
           username: "$user.username",

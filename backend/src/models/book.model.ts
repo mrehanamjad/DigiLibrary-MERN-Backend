@@ -66,6 +66,13 @@ const bookSchema = new mongoose.Schema<BookI>(
       type: [String],
       default: [],
     },
+    pages: {
+      type: Number,
+    },
+    language: {
+      type: String,
+      default: "English",
+    },
     views: {
       type: Number,
       default: 0,
