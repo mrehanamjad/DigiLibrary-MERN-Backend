@@ -5,6 +5,7 @@ import mongoose, { PrePaginatePipelineStage } from "mongoose";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { AuthRequest } from "../types/user.types";
+import { getPaginationOptions } from "../utils/helper";
 
 const getBookComments = asyncHandler(async (req: Request, res: Response) => {
   const { bookId } = req.params;
@@ -80,21 +81,7 @@ const getBookComments = asyncHandler(async (req: Request, res: Response) => {
     },
   ] as PrePaginatePipelineStage[];
 
-  const options = {
-    page: Number(page),
-    limit: Number(limit),
-    customLabels: {
-      totalDocs: "totalComments",
-      docs: "comments",
-      limit: "limit",
-      page: "currentPage",
-      nextPage: "nextPage",
-      prevPage: "prevPage",
-      totalPages: "totalPages",
-      pagingCounter: "pagingCounter",
-      meta: "pagination",
-    },
-  };
+  const options = getPaginationOptions(Number(page),Number(limit),"totalComments","comments")
 
   const result = await Comment.aggregatePaginate(aggregationPipeline, options);
   return res
@@ -147,21 +134,7 @@ const getReplies = asyncHandler(async (req: Request, res: Response) => {
     },
   ] as PrePaginatePipelineStage[];
 
-  const options = {
-    page: Number(page),
-    limit: Number(limit),
-    customLabels: {
-      totalDocs: "totalReplies",
-      docs: "replies",
-      limit: "limit",
-      page: "currentPage",
-      nextPage: "nextPage",
-      prevPage: "prevPage",
-      totalPages: "totalPages",
-      pagingCounter: "pagingCounter",
-      meta: "pagination",
-    },
-  };
+  const options = getPaginationOptions(Number(page),Number(limit),"totalReplies","replies")
 
   const result = await Comment.aggregatePaginate(aggregationPipeline, options);
 

@@ -19,13 +19,14 @@ app.use(cookieParser());
 import userRouter from "./routes/user.routes";
 import bookRouter from "./routes/book.routes";
 import commentRouter from "./routes/comment.route";
-
+import bookmarkRouter from './routes/bookmark.routes'
 
 // routes declaration
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/books", bookRouter);
 app.use("/api/v1/comments", commentRouter);
+app.use('/api/v1/bookmarks',bookmarkRouter)
 
 export { app };
 

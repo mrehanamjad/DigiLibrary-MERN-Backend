@@ -1,6 +1,8 @@
-import mongoose from "mongoose";
+import mongoose, { AggregatePaginateModel } from "mongoose";
 import { BookmarkI } from "../types/bookmark.types";
+import aggregatePaginate from "mongoose-aggregate-paginate-v2";
 
+interface BookmarkModelI extends AggregatePaginateModel<BookmarkI> {}
 
 const bookmarkSchema = new mongoose.Schema<BookmarkI>(
     {
@@ -27,4 +29,6 @@ bookmarkSchema.index({ userId: 1, bookId: 1 }, { unique: true });
 bookmarkSchema.index({ userId: 1 });
 bookmarkSchema.index({ bookId: 1 });
 
-export const Bookmark = mongoose.model<BookmarkI>("Bookmark", bookmarkSchema);
+bookmarkSchema.plugin(aggregatePaginate);
+
+export const Bookmark = mongoose.model<BookmarkI,BookmarkModelI>("Bookmark", bookmarkSchema);
