@@ -25,6 +25,14 @@ import commentRouter from "./routes/comment.route";
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/books", bookRouter);
-app.use("/api/v1/comment", commentRouter);
+app.use("/api/v1/comments", commentRouter);
 
 export { app };
+
+
+
+
+
+
+
+

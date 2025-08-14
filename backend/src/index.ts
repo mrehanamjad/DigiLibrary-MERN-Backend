@@ -2,7 +2,7 @@ import { app } from "./app";
 import { config } from "./config/config";
 import connectDB from "./db/db";
 
-const PORT = config.corsOrigin || 8000;
+const PORT = config.port || 8000;
 
 app.on("error", (err) => {
     console.log("❌ App Error:", err);
