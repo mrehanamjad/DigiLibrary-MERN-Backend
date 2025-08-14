@@ -38,3 +38,15 @@ A Node.js + Express + TypeScript backend for managing a digital library.
 | GET    | `/api/v1/books/my`                     | ✅ Yes         | Get books owned by the logged-in user | ✅      |
 
 ---
+
+## Comment Routes Test Checklist
+
+| Method | Endpoint                              | Auth Required | Description                                       | Tested |
+| ------ | ------------------------------------- | ------------- | ------------------------------------------------- | ------ |
+| GET    | `/api/v1/comments/book/:bookId`       | ❌ No          | Get all top-level comments for a book (paginated) | ✅      |
+| POST   | `/api/v1/comments/book/:bookId`       | ✅ Yes         | Add a new comment to a book                       | ✅      |
+| GET    | `/api/v1/comments/:commentId/replies` | ❌ No          | Get all replies for a specific comment            | ✅      |
+| PATCH  | `/api/v1/comments/:commentId`         | ✅ Yes         | Update a comment (only by the owner)              | ✅      |
+| DELETE | `/api/v1/comments/:commentId`         | ✅ Yes         | Delete a comment (only by the owner)              | ✅      |
+
+---
