@@ -397,6 +397,27 @@ const getBookById = asyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(200, book[0], "Book fetched successfully"));
 });
 
+// TODO: Do it latter
+const getBookFile = asyncHandler(async (req: Request, res: Response) => {
+  const { bookId } = req.params;
+
+  if (!bookId) {
+    throw new ApiError(400, "Book ID is required");
+  }
+
+  const book = await Book.findOne({ _id: bookId, isPublished: true });
+
+  if (!book) {
+    throw new ApiError(404, "Book not found or not published");
+  }
+
+
+  const objectId = new mongoose.Types.ObjectId(bookId);
+
+
+
+})
+
 const togglePublishStatus = asyncHandler(
   async (req: Request, res: Response) => {
     const { bookId } = req.params;
