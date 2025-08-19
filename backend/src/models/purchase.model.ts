@@ -1,5 +1,8 @@
-import mongoose from "mongoose";
+import mongoose, { AggregatePaginateModel }  from "mongoose";
 import { PurchaseI } from "../types/purchase.types";
+import aggregatePaginate from "mongoose-aggregate-paginate-v2";
+
+interface PurchaseModelI extends AggregatePaginateModel<PurchaseI> {}
 
 const purchaseSchema = new mongoose.Schema<PurchaseI>(
   {
@@ -38,4 +41,6 @@ purchaseSchema.index({ userId: 1 });
 purchaseSchema.index({ bookId: 1 });
 purchaseSchema.index({ paymentId: 1 });
 
-export const Purchase = mongoose.model<PurchaseI>("Purchase", purchaseSchema);
+purchaseSchema.plugin(aggregatePaginate)
+
+export const Purchase = mongoose.model<PurchaseI,PurchaseModelI>("Purchase", purchaseSchema);

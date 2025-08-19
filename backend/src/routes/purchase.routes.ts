@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware";
-import { createPurchase } from "../controllers/purchase.controller";
+import { createPurchase,  getMyPurchases } from "../controllers/purchase.controller";
 const router = Router();
 
+router.use(verifyJWT)
 
-// Create a new purchase (free or paid)
-router.route("/create").post(verifyJWT,createPurchase);
+
+router.route("/").get(getMyPurchases).post(createPurchase);
 
 
 export default router;
